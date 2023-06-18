@@ -18,19 +18,15 @@ class penaltyShootout:
       homeScore += self.simple_penalty()
       awayScore += self.simple_penalty()
     
-
-    print(homeScore, awayScore)
     if homeScore > awayScore: self.result =  'DH'
     elif homeScore < awayScore: self.result =  'DA'    
     else:
       # if no one won, we go to shootout
       while(homeScore == awayScore):
-        print("going to a shoot out!! what drama")
+        print("drama!!")
         homeScore += self.simple_penalty()
         awayScore += self.simple_penalty()
-        print(homeScore, awayScore)
 
-      
       if homeScore > awayScore: self.result = 'DH'
       elif homeScore < awayScore: self.result = 'DA'
 
@@ -38,8 +34,13 @@ class penaltyShootout:
     return np.random.randint(0,2)
   
   def get_result_string(self):
-    return self.result
+    return self.result  
 
+def penaltyMap(result):
+  if result != 'D': return result
+
+  p = penaltyShootout()
+  return p.get_result_string()
 
 
 
