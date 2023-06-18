@@ -15,9 +15,9 @@ I wanted to see what impact my idea would have on a league season. Here I picked
 Requires python3 with pandas, numpy, and matplotlib installed.
 The code will make a folder called plots where output plots will appear. 
 
-I suggest setting up in a virtual environment
+To set up in a virtual environment
 ```
-python3 venv venv
+python3 -m venv venv
 source venv/bin/activate
 pip install pandas
 pip install matplotlib
