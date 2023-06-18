@@ -5,20 +5,22 @@ import matplotlib.pyplot as plt
 from itertools import cycle
 import json
 
+## libraries in this project
 from conversion_utils import *
+from penaltyShootout import * 
+
 pd.set_option('display.max_rows', None)
 
 
 ## first set up dataframes -- drop most of the columns in the one we downloaded
-## setup result dataframe where we store the results of our tests
 team_data_full = pd.read_csv('data/SerieA2022.csv')
 team_data = team_data_full[['Date','HomeTeam','AwayTeam','FTHG','FTAG','FTR']].copy()
+## setup result dataframe where we store the results of our tests
 rankings = pd.DataFrame()
 rankings['Team'] = team_data['HomeTeam'].unique()
 
-# I'll save some stats here
+# I'll save some stats here to print out later and see how things change
 result_fom= {}
-
 
 ## Start with the easiest test possible
 ##    First compute the scores the normal way to confirm we get the real ranking
@@ -26,7 +28,7 @@ result_fom= {}
 
 # points for home/away teams
 point_mappings = {
-  'Real': { 'Home': {'H': 3, 'A':0, 'D':1}, 'Away': {'H': 0, 'A':3, 'D':1}},
+  'Real':     { 'Home': {'H': 3, 'A':0, 'D':1}, 'Away': {'H': 0, 'A':3, 'D':1}},
   'HomeWins': { 'Home': {'H': 3, 'A':0, 'D':2}, 'Away': {'H': 0, 'A':3, 'D':1}},
   'AwayWins': { 'Home': {'H': 3, 'A':0, 'D':1}, 'Away': {'H': 0, 'A':3, 'D':2}},
 }
@@ -45,10 +47,8 @@ print(result_fom)
 # print and plot comparison
 print(rankings.sort_values('Real', ascending=False))
 print(json.dumps(result_fom, indent=4))
-rankings.hist(column=[mp for mp in point_mappings],range=[0,100])
+rankings.hist(column=[mp for mp in point_mappings], range=[0,100])
 plt.savefig('plots/default.pdf')
-
-
 
 
 ###--------------------------------------------------------
@@ -61,6 +61,12 @@ plt.savefig('plots/default.pdf')
 team_data['HomePoints'] = team_data['FTR'].map(point_mappings['Real']['Home'])
 team_data['AwayPoints'] = team_data['FTR'].map(point_mappings['Real']['Away'])
 
+print(team_data.groupby('FTR'))
 
+
+# for i in range(0,10):
+#   print("iter", i)
+#   ps = penaltyShootout()
+#   print(ps.get_result_string())
 
 

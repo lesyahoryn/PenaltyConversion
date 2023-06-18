@@ -21,7 +21,6 @@ def compute_rankings(inputData, outputData, col):
     outputData = outputData.reset_index()
     inputData = inputData.reset_index()
   
-  print(outputData)
   return outputData
     
 
@@ -32,17 +31,16 @@ def compute_rankings(inputData, outputData, col):
 def compare_results(inputData, test, control): 
    
    resultInfo = {}
-   print(test, control)
 
    inputData['%s_PointDiff'%test] = inputData[test] - inputData[control]
    
    resultInfo['spread'] = int(inputData[test].max() - inputData[test].min())
+   resultInfo['spread_top10'] = int(inputData.sort_values(test, ascending=False)[0:10][test].max()) - int(inputData.sort_values(test, ascending=False)[0:10][test].min())
+   resultInfo['spread_bot10'] = int(inputData.sort_values(test, ascending=False)[10:20][test].max()) - int(inputData.sort_values(test, ascending=False)[10:20][test].min())
    resultInfo['CL'] = inputData.sort_values(test, ascending=False)['Team'][0:4].tolist()
    resultInfo['EL'] = inputData.sort_values(test, ascending=False)['Team'][4:7].tolist()
    resultInfo['relegation'] = inputData.sort_values(test)['Team'][0:3].tolist()
 
-
-   
    return inputData, resultInfo 
 
 
