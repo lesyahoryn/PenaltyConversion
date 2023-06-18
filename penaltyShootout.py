@@ -3,7 +3,7 @@ import numpy as np
 class penaltyShootout:
 
   def __init__(self):
-    self.nPenalties = 4
+    self.nPenalties = 5
     self.result = 'D'
 
     self.play_shootout()
@@ -23,7 +23,6 @@ class penaltyShootout:
     else:
       # if no one won, we go to shootout
       while(homeScore == awayScore):
-        print("drama!!")
         homeScore += self.simple_penalty()
         awayScore += self.simple_penalty()
 
