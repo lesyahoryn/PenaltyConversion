@@ -133,16 +133,18 @@ if args.mcPenalties:
   plt.clf()
 
   # Plot rank distribution per team 
-  mc_ranks.set_index('Team').T.hist(column = mc_scores['Team'].to_list(), figsize = (16,18))
+  mc_ranks.set_index('Team').T.hist(column = mc_scores['Team'].to_list(), figsize = (16,18), )
   plt.savefig(plotPath+'/mcTest_teams_ranks.pdf')
   plt.clf()
 
   # Plot aggregate FOMs defined in compare_results in penaltyUtils.py
   foms = list(result_fom['Real'].keys())
+  plt.figure(figsize=(8,6))
   for f in foms:
     if 'spread' not in f: continue
-    plt.hist( [ result_fom[y][f] for y in result_fom ])
-    plt.axvline( x = result_fom['Real'][f], color='black' )
+    plt.hist( [ result_fom[y][f] for y in result_fom ], label='spread in ' + f.split("_")[-1] )
+    plt.axvline( x = result_fom['Real'][f], color='black' , label='Actual Result')
+    plt.legend(loc='upper right')
     plt.savefig(plotPath+'/mcTest_%s.pdf'%f)
     plt.clf()
 

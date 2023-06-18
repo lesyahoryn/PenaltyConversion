@@ -36,9 +36,9 @@ def compare_results(inputData, test, control):
 
   resultInfo['spread'] = int(inputData[test].max() - inputData[test].min())
   resultInfo['spread_top10'] = int(inputData.sort_values(test, ascending=False)[0:10][test].max()) - int(inputData.sort_values(test, ascending=False)[0:10][test].min())
-  resultInfo['spread_bot10'] = int(inputData.sort_values(test, ascending=False)[10:20][test].max()) - int(inputData.sort_values(test, ascending=False)[10:20][test].min())
-  resultInfo['spread_mid10'] = int(inputData.sort_values(test, ascending=False)[6:15][test].max()) - int(inputData.sort_values(test, ascending=False)[6:15][test].min())
-  resultInfo['spread_219'] = int(inputData.sort_values(test, ascending=False)[1:18][test].max()) - int(inputData.sort_values(test, ascending=False)[1:18][test].min())
+  resultInfo['spread_bottom10'] = int(inputData.sort_values(test, ascending=False)[10:20][test].max()) - int(inputData.sort_values(test, ascending=False)[10:20][test].min())
+  resultInfo['spread_middle10'] = int(inputData.sort_values(test, ascending=False)[6:15][test].max()) - int(inputData.sort_values(test, ascending=False)[6:15][test].min())
+  resultInfo['spread_noTopBottom'] = int(inputData.sort_values(test, ascending=False)[1:18][test].max()) - int(inputData.sort_values(test, ascending=False)[1:18][test].min())
   resultInfo['CL'] = inputData.sort_values(test, ascending=False)['Team'][0:4].tolist()
   resultInfo['EL'] = inputData.sort_values(test, ascending=False)['Team'][4:7].tolist()
   resultInfo['relegation'] = inputData.sort_values(test)['Team'][0:3].tolist()
