@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--simpleTest', action='store_true', help='run simple application of new rule' )
 parser.add_argument('--mcPenalties', action='store_true', help='run Monte Carlo simulation of new rule')
 parser.add_argument('--dumpStats', action='store_true', help='Print out some information about teams in this year')
-parser.add_argument('--year', type=str, help='choose any year 2005 to 2022')
+parser.add_argument('--years', type=str, help='choose any years 2005 to 2022 in comma separated list, if nothing is given will do all years')
 args = parser.parse_args()
 
 # Possible points for game results
@@ -30,123 +30,142 @@ point_mappings = {
   'Modified': { 'Home': {'H': 3, 'A':0, 'D':1, 'DH': 2, 'DA': 1}, 'Away': {'H': 0, 'A':3, 'D':1, 'DH': 1, 'DA': 2}},
 }
 
-## first set up dataframes -- drop most of the columns in the one we downloaded
-## TODO: make this run over several years
-team_data_full = pd.read_csv('data/SerieA%s.csv'%args.year)
-team_data = team_data_full[['Date','HomeTeam','AwayTeam','FTHG','FTAG','FTR']].copy()
+team_data = {}
+ranks = {}
+scores = {}
+foms = {}
+mc_ranks = {}
+mc_scores = {}
+mc_foms = {}
 
-plotPath = './plots/'+args.year
-if not os.path.exists(plotPath): os.makedirs(plotPath)
+plotPathSummary = './plots/summary'
+if not os.path.exists(plotPathSummary): os.makedirs(plotPathSummary)
 
-###--------------------------------------------------------
-### Learn some stuff about how the different teams did in this year
-###  in particular some stuff that impacts how the new rule would change things
-###  - Number of draws per team
-###--------------------------------------------------------
-if args.dumpStats:
-  
-  team_data_draws = team_data[team_data['FTR'] == 'D']
+for yr  in range(2005,2023):
 
-  # there should be a way to do this in a more panda-y way, but it is low priority for me at the moment.
-  for team in team_data['HomeTeam'].unique().tolist():
-    print(team, len(team_data_draws[ team_data_draws['HomeTeam'] == team]) + len(team_data_draws[ team_data_draws['AwayTeam'] == team]) )
+  year = str(yr)
+  if args.years is not None and str(year) not in args.years: continue
 
+  print("Running year", year)
 
-###--------------------------------------------------------
-### Start with some sanity checks and simplest modification possible
-###  - First compute the scores with standard point allocation, 
-###    and confirm that I reproduce the real result table (ignoring disciplinary point changes)
-###  - Assign an extra point to one team in the draw, for now always assign to either home or away
-###  - Define some figures of merit (FOM) to compare to real result
-###--------------------------------------------------------
-if args.simpleTest:
+  ## first set up dataframes -- drop most of the columns in the one we downloaded
+  team_data_full = pd.read_csv('data/SerieA%s.csv'%year)
+  team_data[year] = team_data_full[['Date','HomeTeam','AwayTeam','FTHG','FTAG','FTR']].copy()
 
-  ## setup result dataframe where we store the results of our tests
-  scores = newTeamDFWithRealScore(team_data)  # total score
-  ranks = newTeamDFWithRealScore(team_data)  # total score
-  ranks['RealRank'] = scores['Real'].rank(ascending=False, method='max')
-  ranks = ranks.drop('Real', axis=1)
+  plotPath = './plots/'+year
+  if not os.path.exists(plotPath): os.makedirs(plotPath)
 
-
-  # I'll save some stats here to print out later and see how things change
-  result_fom= {}
-  # apply them and save results in df
-  for mapping in ['HomeWins', 'AwayWins']:
-
-    team_data['HomePoints'] = team_data['FTR'].map(point_mappings[mapping]['Home'])
-    team_data['AwayPoints'] = team_data['FTR'].map(point_mappings[mapping]['Away'])
-
-    scores = compute_score(team_data, scores, mapping)
-    scores, result_fom[mapping] = compare_results(scores, mapping, 'Real')
-    ranks['%sRank'%mapping] = scores[mapping].rank(ascending=False, method='max')
-
-  print(ranks)
-  print(scores)
-  #print(json.dumps(result_fom, indent=4))
-  scores.hist(column=['Real', 'HomeWins', 'AwayWins'], range=[0,100])
-  plt.savefig(plotPath+'/simpleTest.pdf')
-
-
-###--------------------------------------------------------
-### Now let's study the idea bit more scientifically -
-###  - Simulate the penalty shoot out -- 5 penalties then sudden death
-###  - Each penalty has flat 50% chance of success 
-###  - Run the season many times and statistically study result
-###--------------------------------------------------------
-if args.mcPenalties:
-
-  ## Setup new dataframe to store results of our tests
-  result_fom = {}
-  mc_scores = newTeamDFWithRealScore(team_data)  #total score
-  mc_scores, result_fom['Real'] = compare_results(mc_scores, 'Real', 'Real')
-  
-  mc_ranks = newTeamDFWithRealScore(team_data)  #rank 
-  mc_ranks['RealRank'] = mc_ranks['Real'].rank(ascending=False, method='max')
-  mc_ranks = mc_ranks.drop('Real', axis=1)
-
-  ## Perform the simulation 
-  nIters = 1000
-  ranks = {}
-  for i in range(0, nIters):
-    tmpdf = team_data.copy()
-
-    # Redo the FTR column so that if there is a draw, we simulate a penalty shootout. 
-    tmpdf['FTR'] = tmpdf['FTR'].map(lambda x: penaltyMap(x))
+  ###--------------------------------------------------------
+  ### Learn some stuff about how the different teams did in this year
+  ###  in particular some stuff that impacts how the new rule would change things
+  ###  - Number of draws per team
+  ###--------------------------------------------------------
+  if args.dumpStats:
     
-    # Compute the points again now that we've updated the table
-    tmpdf['HomePoints'] = tmpdf['FTR'].map(point_mappings['Modified']['Home'])
-    tmpdf['AwayPoints'] = tmpdf['FTR'].map(point_mappings['Modified']['Away'])
+    team_data_draws = team_data[year][team_data[year]['FTR'] == 'D']
+
+    # I should do this in a more panda-y way, but it is low priority for me at the moment.
+    print('Draws per team in ', year)
+    for team in team_data[year]['HomeTeam'].unique().tolist():
+      print(team, len(team_data_draws[ team_data_draws['HomeTeam'] == team]) + len(team_data_draws[ team_data_draws['AwayTeam'] == team]) )
+    print('\n')
+
+
+  ###--------------------------------------------------------
+  ### Start with some sanity checks and simplest modification possible
+  ###  - First compute the scores with standard point allocation, 
+  ###    and confirm that I reproduce the real result table (ignoring disciplinary point changes)
+  ###  - Assign an extra point to one team in the draw, for now always assign to either home or away
+  ###  - Define some figures of merit (FOM) to compare to real result
+  ###--------------------------------------------------------
+  if args.simpleTest:
+
+    ## setup result dataframe where we store the results of our tests
+    scores[year] = newTeamDFWithRealScore(team_data[year])  # total score
+    ranks[year] = newTeamDFWithRealScore(team_data[year])  # total score
+    ranks[year]['RealRank'] = scores[year]['Real'].rank(ascending=False, method='max')
+    ranks[year] = ranks[year].drop('Real', axis=1)
+
+
+    # I'll save some stats here to print out later and see how things change
+    foms[year]= {}
+    # apply them and save results in df
+    for mapping in ['HomeWins', 'AwayWins']:
+
+      team_data[year]['HomePoints'] = team_data[year]['FTR'].map(point_mappings[mapping]['Home'])
+      team_data[year]['AwayPoints'] = team_data[year]['FTR'].map(point_mappings[mapping]['Away'])
+
+      scores[year] = compute_score(team_data[year], scores[year], mapping)
+      scores[year], foms[year][mapping] = compare_results(scores[year], mapping, 'Real')
+      ranks[year]['%sRank'%mapping] = scores[year][mapping].rank(ascending=False, method='max')
+
+    print(ranks[year])
+    print(scores[year])
+    #print(json.dumps(foms[year], indent=4))
+    scores[year].hist(column=['Real', 'HomeWins', 'AwayWins'], range=[0,100])
+    plt.savefig(plotPath+'/simpleTest.pdf')
+
+
+  ###--------------------------------------------------------
+  ### Now let's study the idea bit more scientifically -
+  ###  - Simulate the penalty shoot out -- 5 penalties then sudden death
+  ###  - Each penalty has flat 50% chance of success 
+  ###  - Run the season many times and statistically study result
+  ###--------------------------------------------------------
+  if args.mcPenalties:
+
+    ## Setup new dataframe to store results of our tests
+    mc_foms[year] = {}
+    mc_scores[year] = newTeamDFWithRealScore(team_data[year])  #total score
+    mc_scores[year], mc_foms[year]['Real'] = compare_results(mc_scores[year], 'Real', 'Real')
     
-    # Compute and save the scores for this iteration
-    mc_scores = compute_score(tmpdf, mc_scores, 'Modified%i'%i)
-    mc_scores, result_fom['Modified%i'%i] = compare_results(mc_scores, 'Modified%i'%i, 'Real')
+    mc_ranks[year] = newTeamDFWithRealScore(team_data[year])  #rank 
+    mc_ranks[year]['RealRank'] = mc_ranks[year]['Real'].rank(ascending=False, method='max')
+    mc_ranks[year] = mc_ranks[year].drop('Real', axis=1)
 
-    # save the season rank as well
-    ranks['Modified%i'%i] = mc_scores['Modified%i'%i].rank(ascending=False, method='max').to_list()
+    ## Perform the simulation 
+    nIters = 1000
+    ranks = {}
+    for i in range(0, nIters):
+      tmpdf = team_data[year].copy()
 
-  # This is a more performant way to add in the ranks, will update the scores as well if I can.
-  mc_ranks = pd.concat([mc_ranks, pd.DataFrame(ranks)], axis=1)
+      # Redo the FTR column so that if there is a draw, we simulate a penalty shootout. 
+      tmpdf['FTR'] = tmpdf['FTR'].map(lambda x: penaltyMap(x))
+      
+      # Compute the points again now that we've updated the table
+      tmpdf['HomePoints'] = tmpdf['FTR'].map(point_mappings['Modified']['Home'])
+      tmpdf['AwayPoints'] = tmpdf['FTR'].map(point_mappings['Modified']['Away'])
+      
+      # Compute and save the scores for this iteration
+      mc_scores[year] = compute_score(tmpdf, mc_scores[year], 'Modified%i'%i)
+      mc_scores[year], mc_foms[year]['Modified%i'%i] = compare_results(mc_scores[year], 'Modified%i'%i, 'Real')
 
-  # Plot score distribution per team 
-  mc_scores.set_index('Team').T.hist(column = mc_scores['Team'].to_list(), figsize = (16,18))
-  plt.savefig(plotPath+'/mcTest_team_scores.pdf')
-  plt.clf()
+      # save the season rank as well
+      ranks['Modified%i'%i] = mc_scores[year]['Modified%i'%i].rank(ascending=False, method='max').to_list()
 
-  # Plot rank distribution per team 
-  mc_ranks.set_index('Team').T.hist(column = mc_scores['Team'].to_list(), figsize = (16,18), )
-  plt.savefig(plotPath+'/mcTest_teams_ranks.pdf')
-  plt.clf()
+    # This is a more performant way to add in the ranks, will update the scores as well if I can.
+    mc_ranks[year] = pd.concat([mc_ranks[year], pd.DataFrame(ranks)], axis=1)
 
-  # Plot aggregate FOMs defined in compare_results in penaltyUtils.py
-  foms = list(result_fom['Real'].keys())
-  plt.figure(figsize=(8,6))
-  for f in foms:
-    if 'spread' not in f: continue
-    plt.hist( [ result_fom[y][f] for y in result_fom ], label='spread in ' + f.split("_")[-1] )
-    plt.axvline( x = result_fom['Real'][f], color='black' , label='Actual Result')
-    plt.legend(loc='upper right')
-    plt.savefig(plotPath+'/mcTest_%s.pdf'%f)
+    # Plot score distribution per team 
+    mc_scores[year].set_index('Team').T.hist(column = mc_scores[year]['Team'].to_list(), figsize = (16,18))
+    plt.savefig(plotPath+'/mcTest_team_scores.pdf')
     plt.clf()
+
+    # Plot rank distribution per team 
+    mc_ranks[year].set_index('Team').T.hist(column = mc_scores[year]['Team'].to_list(), figsize = (16,18), )
+    plt.savefig(plotPath+'/mcTest_teams_ranks.pdf')
+    plt.clf()
+
+    # Plot aggregate FOMs defined in compare_results in penaltyUtils.py
+    foms_to_plot = list(mc_foms[year]['Real'].keys())
+    plt.figure(figsize=(8,6))
+    for f in foms_to_plot:
+      if 'spread' not in f: continue
+      plt.hist( [ mc_foms[year][y][f] for y in mc_foms[year] ], label='spread in ' + f.split("_")[-1] )
+      plt.axvline( x = mc_foms[year]['Real'][f], color='black' , label='Actual Result')
+      plt.legend(loc='upper right')
+      plt.savefig(plotPath+'/mcTest_%s.pdf'%f)
+      plt.clf()
 
 
 
