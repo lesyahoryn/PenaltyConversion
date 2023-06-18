@@ -1,4 +1,4 @@
-./venv
-./plots
+venv
+plots
 .DS_store
 __pycache__/
