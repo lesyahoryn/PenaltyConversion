@@ -35,6 +35,9 @@ point_mappings = {
 team_data_full = pd.read_csv('data/SerieA%s.csv'%args.year)
 team_data = team_data_full[['Date','HomeTeam','AwayTeam','FTHG','FTAG','FTR']].copy()
 
+plotPath = './plots/'+args.year
+if not os.path.exists(plotPath): os.makedirs(plotPath)
+
 ###--------------------------------------------------------
 ### Learn some stuff about how the different teams did in this year
 ###  in particular some stuff that impacts how the new rule would change things
@@ -42,12 +45,6 @@ team_data = team_data_full[['Date','HomeTeam','AwayTeam','FTHG','FTAG','FTR']].c
 ###--------------------------------------------------------
 if args.dumpStats:
   
-  # Init dataframe with real for the season 
-  # ranking = newTeamDF()
-  # team_data['HomePoints'] = team_data['FTR'].map(point_mappings['Real']['Home'])
-  # team_data['AwayPoints'] = team_data['FTR'].map(point_mappings['Real']['Away'])
-  # ranking = compute_score(team_data, ranking, 'Real')
-
   team_data_draws = team_data[team_data['FTR'] == 'D']
 
   # there should be a way to do this in a more panda-y way, but it is low priority for me at the moment.
@@ -66,6 +63,10 @@ if args.simpleTest:
 
   ## setup result dataframe where we store the results of our tests
   scores = newTeamDFWithRealScore(team_data)  # total score
+  ranks = newTeamDFWithRealScore(team_data)  # total score
+  ranks['RealRank'] = scores['Real'].rank(ascending=False, method='max')
+  ranks = ranks.drop('Real', axis=1)
+
 
   # I'll save some stats here to print out later and see how things change
   result_fom= {}
@@ -77,14 +78,13 @@ if args.simpleTest:
 
     scores = compute_score(team_data, scores, mapping)
     scores, result_fom[mapping] = compare_results(scores, mapping, 'Real')
+    ranks['%sRank'%mapping] = scores[mapping].rank(ascending=False, method='max')
 
-
-  print(result_fom)  
-  # print and plot comparison
-  print(scores.sort_values('Real', ascending=False))
+  print(ranks)
+  print(scores)
   #print(json.dumps(result_fom, indent=4))
   scores.hist(column=['Real', 'HomeWins', 'AwayWins'], range=[0,100])
-  plt.savefig('plots/simpleTest%s.pdf'%args.year)
+  plt.savefig(plotPath+'/simpleTest.pdf')
 
 
 ###--------------------------------------------------------
@@ -99,9 +99,14 @@ if args.mcPenalties:
   result_fom = {}
   mc_scores = newTeamDFWithRealScore(team_data)  #total score
   mc_scores, result_fom['Real'] = compare_results(mc_scores, 'Real', 'Real')
+  
+  mc_ranks = newTeamDFWithRealScore(team_data)  #rank 
+  mc_ranks['RealRank'] = mc_ranks['Real'].rank(ascending=False, method='max')
+  mc_ranks = mc_ranks.drop('Real', axis=1)
 
   ## Perform the simulation 
   nIters = 1000
+  ranks = {}
   for i in range(0, nIters):
     tmpdf = team_data.copy()
 
@@ -116,17 +121,29 @@ if args.mcPenalties:
     mc_scores = compute_score(tmpdf, mc_scores, 'Modified%i'%i)
     mc_scores, result_fom['Modified%i'%i] = compare_results(mc_scores, 'Modified%i'%i, 'Real')
 
-  mc_scores.set_index('Team').T.hist(column = mc_scores['Team'].to_list())
-  plt.savefig('plots/mcTest_Teams%s.pdf'%args.year)
+    # save the season rank as well
+    ranks['Modified%i'%i] = mc_scores['Modified%i'%i].rank(ascending=False, method='max').to_list()
+
+  # This is a more performant way to add in the ranks, will update the scores as well if I can.
+  mc_ranks = pd.concat([mc_ranks, pd.DataFrame(ranks)], axis=1)
+
+  # Plot score distribution per team 
+  mc_scores.set_index('Team').T.hist(column = mc_scores['Team'].to_list(), figsize = (16,18))
+  plt.savefig(plotPath+'/mcTest_team_scores.pdf')
   plt.clf()
 
+  # Plot rank distribution per team 
+  mc_ranks.set_index('Team').T.hist(column = mc_scores['Team'].to_list(), figsize = (16,18))
+  plt.savefig(plotPath+'/mcTest_teams_ranks.pdf')
+  plt.clf()
+
+  # Plot aggregate FOMs defined in compare_results in penaltyUtils.py
   foms = list(result_fom['Real'].keys())
-  print(foms)
   for f in foms:
     if 'spread' not in f: continue
     plt.hist( [ result_fom[y][f] for y in result_fom ])
     plt.axvline( x = result_fom['Real'][f], color='black' )
-    plt.savefig('plots/mcTest_%s_%s.pdf'%(f,args.year))
+    plt.savefig(plotPath+'/mcTest_%s.pdf'%f)
     plt.clf()
 
 
