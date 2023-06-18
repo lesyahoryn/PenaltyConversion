@@ -26,5 +26,5 @@ There are currently two tests implemented:
 ## TO DO:
 
 - Better plotting, legends, axis labels, etc
-- Add ranks in pandas-preferred way (already implemented for ranks)
+- Add ranks in pandas-preferred way (already implemented for ranks) -- likely will speed up run time (currently 2 mins for 17 years)
 
