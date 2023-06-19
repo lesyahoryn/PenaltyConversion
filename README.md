@@ -4,7 +4,7 @@
 
 My favorite part of any championship is the penalty shootout and I think that the threat of the penalty shootout helps makes these games feel more competitive. I half joked that there should be a point for a penalty shootout during the normal league, for some extra spice. 
 
-My proposed rules are: no extra time, but if there is a tie at the end of 90 minutes, a penalty shootout commences. It will follow the normal rules (5 penalties per team, then one-one until someone wins. The team that wins the penalty shootout gets an extra point in addition to the normal ones allocated for ties. So if team A and team B tie, then team B wins the shootout, team A gets 1 point and team B gets 2 points. 
+My proposed rules are: no extra time, but if there is a tie at the end of 90 minutes, a penalty shootout commences. It will follow the normal rules (5 penalties per team, then one-one until someone wins). The team that wins the penalty shootout gets an extra point in addition to the normal ones allocated for ties. So if team A and team B tie, then team B wins the shootout, team A gets 1 point and team B gets 2 points. 
 
 I wanted to see what impact my idea would have on a league season. Here I picked Serie A, which has data from 2005-2022 in the `data` folder. This data came from: [https://www.football-data.co.uk](https://www.football-data.co.uk).  
 
