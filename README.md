@@ -28,11 +28,11 @@ pip install matplotlib
 The top level script is `testPenalties.py` which depends on `penaltyUtils.py` (mostly helper functions that compute points of comparison) and `penaltyShootout.py` (which simulates the shootout). 
 
 There are currently two tests implemented:
-1. A simple test of the idea (usage: `python testPenalties.py --simpleTest --year [year]`). This looks at how the season would change if the home (or away) team always won the penalty shootout.
+1. A simple test of the idea (usage: `python testPenalties.py --simpleTest --year [year]` where year list of years, or no option will run all years from 2005-2022). This looks at how the season would change if the home (or away) team always won the penalty shootout.
 2. A Monte Carlo simulation of the penalty shootout (usage: `python testPenalties.py --mcPenalties --year [year]`). Here it assumes that each team has a 50% chance of scoring the penalty, and runs through 1000 instances of the season to study the most likely result of the introduction of the rule. 
 
 ## TO DO:
 
 - Better plotting, legends, axis labels, etc
-- Add ranks in pandas-preferred way (already implemented for ranks) -- likely will speed up run time (currently 2 mins for 17 years)
+- Add scores in pandas-preferred way (already implemented for ranks) -- likely will speed up run time (currently 2 mins for 17 years)
 
