@@ -34,16 +34,30 @@ def compare_results(inputData, test, control):
 
   #inputData['%s_PointDiff'%test] = inputData[test] - inputData[control]
 
-  resultInfo['spread_all'] = int(inputData[test].max() - inputData[test].min())
-  resultInfo['spread_top10'] = int(inputData.sort_values(test, ascending=False)[0:10][test].max()) - int(inputData.sort_values(test, ascending=False)[0:10][test].min())
-  resultInfo['spread_bottom10'] = int(inputData.sort_values(test, ascending=False)[10:20][test].max()) - int(inputData.sort_values(test, ascending=False)[10:20][test].min())
-  resultInfo['spread_middle10'] = int(inputData.sort_values(test, ascending=False)[6:15][test].max()) - int(inputData.sort_values(test, ascending=False)[6:15][test].min())
-  resultInfo['spread_noTopBottom'] = int(inputData.sort_values(test, ascending=False)[1:18][test].max()) - int(inputData.sort_values(test, ascending=False)[1:18][test].min())
+  resultInfo['spread_all'] = getSpread(inputData, 0, 20, test)
+  resultInfo['changein_spread_all'] = getSpread(inputData, 0, 20, test) - getSpread(inputData, 0, 20, control)
+  
+  resultInfo['spread_top10'] = getSpread(inputData, 0, 10, test)
+  resultInfo['changein_spread_top10'] = getSpread(inputData, 0, 10, test) - getSpread(inputData, 0, 10, control)
+  
+  resultInfo['spread_bottom10'] = getSpread(inputData, 10, 20, test)
+  resultInfo['changein_spread_bottom10'] = getSpread(inputData, 10, 20, test) - getSpread(inputData, 10, 20, control)
+
+  resultInfo['spread_middle10'] = getSpread(inputData, 6, 15, test)
+  resultInfo['changein_spread_bottom10'] = getSpread(inputData, 6, 15, test) - getSpread(inputData, 6, 15, control)
+
+  resultInfo['spread_noTopBottom'] = getSpread(inputData, 1, 18, test)
+  resultInfo['changein_spread_bottom10'] = getSpread(inputData, 1, 18, test) - getSpread(inputData, 1, 18, control)
+
+  
   resultInfo['CL'] = inputData.sort_values(test, ascending=False)['Team'][0:4].tolist()
   resultInfo['EL'] = inputData.sort_values(test, ascending=False)['Team'][4:7].tolist()
   resultInfo['relegation'] = inputData.sort_values(test)['Team'][0:3].tolist()
 
   return inputData, resultInfo 
+
+def getSpread(inputData, startPos, endPos, column):
+  return int(inputData.sort_values(column, ascending=False)[startPos:endPos][column].max()) - int(inputData.sort_values(column, ascending=False)[startPos:endPos][column].min())
 
 
 # Initialize a new results dataframe, and compute the real score from the season

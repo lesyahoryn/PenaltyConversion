@@ -20,6 +20,7 @@ parser.add_argument('--dumpStats', action='store_true', help='Print out some inf
 parser.add_argument('--years', type=str, help='choose any years 2005 to 2022 in comma separated list, if nothing is given will do all years')
 args = parser.parse_args()
 
+
 # Possible points for game results
 # H: home win, A: away win D: draw
 # my addition: DA: draw with away winning penalties, DH: draw with home winning penalties
@@ -37,6 +38,7 @@ foms = {}
 mc_ranks = {}
 mc_scores = {}
 mc_foms = {}
+years_to_plot = []
 
 plotPathSummary = './plots/summary'
 if not os.path.exists(plotPathSummary): os.makedirs(plotPathSummary)
@@ -47,6 +49,7 @@ for yr  in range(2005,2023):
   if args.years is not None and str(year) not in args.years: continue
 
   print("Running year", year)
+  years_to_plot.append(year)
 
   ## first set up dataframes -- drop most of the columns in the one we downloaded
   team_data_full = pd.read_csv('data/SerieA%s.csv'%year)
@@ -147,25 +150,66 @@ for yr  in range(2005,2023):
     mc_ranks[year] = pd.concat([mc_ranks[year], pd.DataFrame(ranks)], axis=1)
 
     # Plot score distribution per team 
-    mc_scores[year].set_index('Team').T.hist(column = mc_scores[year]['Team'].to_list(), figsize = (16,18))
+    axes = mc_scores[year].set_index('Team').T.hist(column = mc_scores[year]['Team'].to_list(), figsize = (14,16))
+    for ax in axes.flatten():
+      ax.axvline( x = mc_scores[year].set_index('Team')['Real'][ax.get_title()], color='black' , label='Actual Result')
+      ax.legend(loc='upper right')
+      ymin, ymax = ax.get_ylim()
+      ax.set_ylim( ymin, ymax*1.5 )
+      ax.set_xlabel("Season Score")
+      ax.set_ylabel("Entries")
     plt.savefig(plotPath+'/mcTest_team_scores.pdf')
-    plt.clf()
+    plt.close()
 
     # Plot rank distribution per team 
-    mc_ranks[year].set_index('Team').T.hist(column = mc_scores[year]['Team'].to_list(), figsize = (16,18), )
+    axes = mc_ranks[year].set_index('Team').T.hist(column = mc_scores[year]['Team'].to_list(), figsize = (14,16))
+    for ax in axes.flatten():
+      ax.axvline( x = mc_ranks[year].set_index('Team')['RealRank'][ax.get_title()], color='black' , label='Actual Result')
+      ax.legend(loc='upper right')
+      ymin, ymax = ax.get_ylim()
+      ax.set_ylim( ymin, ymax*1.5 )
+      ax.set_xlabel("Season Rank")
+      ax.set_ylabel("Entries") 
     plt.savefig(plotPath+'/mcTest_teams_ranks.pdf')
-    plt.clf()
+    plt.close()
 
     # Plot aggregate FOMs defined in compare_results in penaltyUtils.py
     foms_to_plot = list(mc_foms[year]['Real'].keys())
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(8,6)) # reset default
     for f in foms_to_plot:
       if 'spread' not in f: continue
-      plt.hist( [ mc_foms[year][y][f] for y in mc_foms[year] ], label='spread in ' + f.split("_")[-1] )
+      if 'change' in f: lab = 'change  in spread in ' + f.split("_")[-1] + '(test - real)'
+      else: lab = 'change  in spread in ' + f.split("_")[-1] + '(test - real)'
+      
+      plt.hist( [ mc_foms[year][z][f] for z in mc_foms[year] ], label=lab )
       plt.axvline( x = mc_foms[year]['Real'][f], color='black' , label='Actual Result')
       plt.legend(loc='upper right')
       plt.savefig(plotPath+'/mcTest_%s.pdf'%f)
-      plt.clf()
+      plt.close()
+
+
+
+## Now for some summary plotting to decide if my idea is a good one
+# TODO: I would like a better way to visualize how much the ranking changes
+bins = np.linspace(-10, 10, 15)
+colors = plt.cm.jet(np.linspace(0,1,len(years_to_plot)))
+
+foms_to_plot = list(mc_foms[year]['Real'].keys())
+for f in foms_to_plot:
+  if 'change' not in f: continue
+  for i, year in enumerate(years_to_plot):
+    plt.hist( [mc_foms[year][z][f] for z in mc_foms[year]], bins, linewidth=1.2, facecolor='none', histtype = 'step', label=year, edgecolor=colors[i])
+    #plt.hist( [mc_foms[year][z][f] for z in mc_foms[year]], bins, alpha=0.5, label=year, color=colors[i])
+  
+  plt.axvline(x=0, color='black')
+  plt.legend(loc='upper right')
+  plt.title(f.split('_')[-1])
+  plt.xlabel('Change in spread (test - Real)')
+  plt.ylabel('Events')
+  plt.savefig(plotPathSummary+'/compare_%s.pdf'%f)
+  plt.close()
+
+
 
 
 
