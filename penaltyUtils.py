@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 
 ## get rankings for the season given home/away points per game and save into output data frame
 ##    inputData: dataframe with home/away teams and home/away points
@@ -32,33 +33,25 @@ def compare_results(inputData, test, control):
 
   resultInfo = {}
 
-  #inputData['%s_PointDiff'%test] = inputData[test] - inputData[control]
-
-  resultInfo['spread_all'] = getSpread(inputData, 0, 20, test)
-  resultInfo['changein_spread_all'] = getSpread(inputData, 0, 20, test) - getSpread(inputData, 0, 20, control)
+  resultInfo['sigma_all'] = getSigma(inputData, 0, 20, test)
+  resultInfo['changein_sigma_all'] = getSigma(inputData, 0, 20, test) - getSigma(inputData, 0, 20, control)
   
-  resultInfo['spread_top10'] = getSpread(inputData, 0, 10, test)
-  resultInfo['changein_spread_top10'] = getSpread(inputData, 0, 10, test) - getSpread(inputData, 0, 10, control)
+  resultInfo['sigma_top10'] = getSigma(inputData, 0, 10, test)
+  resultInfo['changein_sigma_top10'] = getSigma(inputData, 0, 10, test) - getSigma(inputData, 0, 10, control)
   
-  resultInfo['spread_bottom10'] = getSpread(inputData, 10, 20, test)
-  resultInfo['changein_spread_bottom10'] = getSpread(inputData, 10, 20, test) - getSpread(inputData, 10, 20, control)
+  resultInfo['sigma_bottom10'] = getSigma(inputData, 10, 20, test)
+  resultInfo['changein_sigma_bottom10'] = getSigma(inputData, 10, 20, test) - getSigma(inputData, 10, 20, control)
 
-  resultInfo['spread_middle10'] = getSpread(inputData, 6, 15, test)
-  resultInfo['changein_spread_bottom10'] = getSpread(inputData, 6, 15, test) - getSpread(inputData, 6, 15, control)
+  # resultInfo['CL'] = inputData.sort_values(test, ascending=False)['Team'][0:4].tolist()
+  # resultInfo['EL'] = inputData.sort_values(test, ascending=False)['Team'][4:7].tolist()
+  # resultInfo['relegation'] = inputData.sort_values(test)['Team'][0:3].tolist()
 
-  resultInfo['spread_noTopBottom'] = getSpread(inputData, 1, 18, test)
-  resultInfo['changein_spread_bottom10'] = getSpread(inputData, 1, 18, test) - getSpread(inputData, 1, 18, control)
+  return resultInfo 
 
-  
-  resultInfo['CL'] = inputData.sort_values(test, ascending=False)['Team'][0:4].tolist()
-  resultInfo['EL'] = inputData.sort_values(test, ascending=False)['Team'][4:7].tolist()
-  resultInfo['relegation'] = inputData.sort_values(test)['Team'][0:3].tolist()
 
-  return inputData, resultInfo 
-
-def getSpread(inputData, startPos, endPos, column):
-  return int(inputData.sort_values(column, ascending=False)[startPos:endPos][column].max()) - int(inputData.sort_values(column, ascending=False)[startPos:endPos][column].min())
-
+#get standard deviation - uses numpy std
+def getSigma(inputData, startPos, endPos, column):
+  return float(inputData.sort_values(column, ascending=False)[startPos:endPos][column].std())
 
 # Initialize a new results dataframe, and compute the real score from the season
 def newTeamDFWithRealScore(inputData, point_mapping = {'Home': {'H': 3, 'A':0, 'D':1}, 'Away': {'H': 0, 'A':3, 'D':1}}):
@@ -72,4 +65,28 @@ def newTeamDFWithRealScore(inputData, point_mapping = {'Home': {'H': 3, 'A':0, '
 
   return outputData
 
+################
+## Plotters
+################
 
+## Histogram from list
+def histoFromList(inputData, title, xlabel, savename, nbins, range):
+    plt.hist( inputData, bins=nbins, range=range )
+    plt.title( title )
+    plt.xlabel( xlabel )
+    plt.savefig( savename )
+    plt.close()
+
+## Plot one distribution per team in dataframe
+def plotPerTeam(inputData, control, xlabel, savename):
+    
+    axes = inputData.set_index('Team').T.hist(column = inputData['Team'].to_list(), figsize = (14,16))
+    for ax in axes.flatten():
+      ax.axvline( x = inputData.set_index('Team')[control][ax.get_title()], color='black' , label='Actual Result')
+      ax.legend(loc='upper right')
+      ymin, ymax = ax.get_ylim()
+      ax.set_ylim( ymin, ymax*1.5 )
+      ax.set_xlabel(xlabel)
+      ax.set_ylabel("Entries")
+    plt.savefig(savename)
+    plt.close()
